@@ -1,0 +1,230 @@
+---
+title: 'Case Study: Airbag and Car Accidents'
+author: "Alireza Mostafizi"
+date: "May 15, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This documnet answers to the questions regarding the *Airbag and Car Accidents* case study. I start with installign *DAAG* packages and loading the data.
+
+```{r}
+#install.packages("DAAG")
+library(DAAG)
+library(ggplot2)
+data('nassCDS')
+#?nassCDS
+```
+
+This dataset includes the information regarding 26217 police-reported accidents from 1997 to 2002 where there was either property or occupant (only front seat) injury and at least one car was towed. The dataset has 15 variables including, but not limited to, estimated impact speed and the type of accident, characteristics of the vehicle such as safety and year of manufacturing, drivers characteristics such as sex and age, injury level, and if the airbags were deployed or not.
+
+With this in mind, let's answer the questions in hand,
+
+1. Histogram of the variable *weight*.
+
+```{r}
+ggplot(data = nassCDS) +
+  geom_histogram(aes(weight))
+
+```
+
+As the dataset help file mentions, the weughts have uncertain accuracy. Unexpectedly large x range for the historgam above shows that there are extremely large values for weight. If we zoom into the *y* axis and limit it from 0 to 10,
+
+```{r}
+ggplot(data = nassCDS) +
+  geom_histogram(aes(weight)) +
+  coord_cartesian(ylim = c(0,10))
+
+```
+
+There are observations, although a few, with weights of roughly 5000 and 6000. And this shows that the data has uncertain accuracy. We can see the distributiuon of the weights with the following plot in a better way,
+
+
+```{r}
+ggplot(data = nassCDS) +
+  geom_histogram(aes(weight), binwidth = 100) +
+  coord_cartesian(xlim = c(0,4000))
+
+```
+
+It can be seen that most of the observations have weights of lower than 500. We can plot Parallel Coordinate plot for the observations with high and low weights to investiage what differenciates these observatiosn from each other.
+
+To do this, we have to filter the data, and add a categorical variable that classifies low and high weights. For the purpose of this assignment, I assue any weight above 4000 is high and any weight less than 4 is low. These thresholds collect roughly the same number of observations from the bottom and the top of the dataset with regard to the vlaue of the weight.
+
+```{r}
+library(dplyr)
+extreme_weight_nassCDS <- nassCDS %>%
+                            filter(weight > 4000 | weight < 4) %>%
+                            mutate(high = ifelse(weight > 4000, TRUE, FALSE)) %>%
+                            group_by(high)
+
+#install.packages("GGally")
+library(GGally)
+ggparcoord(extreme_weight_nassCDS[order(extreme_weight_nassCDS$high),], columns=1:14,
+           groupColumn = "high", scale="uniminmax", alphaLines = 0.2) +
+           xlab("") + ylab("") +
+           scale_colour_manual(values = c("blue","red")) +
+           theme(axis.ticks.y = element_blank(),
+           axis.text.y = element_blank())
+```
+
+This is uselss. I can try comparing the distribution of different variables, devided into two categories of high and low wiight. For instance,
+
+```{r}
+ggplot(data = extreme_weight_nassCDS) +
+  geom_freqpoly(aes(ageOFocc, ..density.., color = high))
+```
+
+I compared all the variables, the below plot shows the distribution of each varibale for high (red) and low (blue) weight observations.
+
+```{r}
+library(gridExtra)
+
+## since the count of both categories are roughly the same,
+## (..count..)/sum(..count..) is a valid comparison.
+
+p1 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = dvcat, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p2 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = dead, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p3 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = airbag, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p4 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = seatbelt, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p5 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = frontal, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p6 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = sex, y = (..count..)/sum(..count..) ,fill = high), position = "dodge") + ylab("") + theme(legend.position="none")
+
+p7 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = ageOFocc, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+p8 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = yearacc, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+p9 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = abcat, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+p10 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = occRole, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+p11 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = deploy, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+p12 <- ggplot(data = extreme_weight_nassCDS) +
+  geom_bar(aes(x = injSeverity, y = (..count..)/sum(..count..) ,fill = high), position = "dodge")+ ylab("") + theme(legend.position="none")
+
+grid.arrange(p1, p2, p3,
+             p4, p5, p6,
+             p7, p8, p9,
+             p10, p11, p12, ncol=3)
+
+``` 
+
+2. The correlation between availability of airbag with the age of the vehicle. To investiaget this we can see the distribution of the year of the vehicle, categorized by the variable *airbag*.
+
+```{r}
+ggplot(data = nassCDS) +
+  geom_freqpoly(aes(yearVeh, ..density.., color = airbag))
+```
+
+This plot shows tha most of the vehicle equipped with airbag are made after 1995, and vice versa.
+
+3. *Death rate* correlation with vehicle's *speed*.
+
+One approach to address this question is to plot the speed distribution of the fatal and non-fatal crashes. For this we need to make a summary of the data first and then plot it.
+
+```{r}
+nassCDS_prop <- nassCDS %>%
+                  group_by(dvcat, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+ggplot(data = nassCDS_prop) +
+  geom_bar(aes(dvcat, freq, fill = dead), stat = "identity", position = "stack")
+
+```
+It can be seen as the speed of the crash increases, the percentage of the fatality increases as well.
+
+
+4. Correlation of *Death rate* with *seatbelt*, *airbag*, *deploy*, and *frontal*.
+
+We can generate the same plot as the previous question for these varibales.
+
+```{r}
+nassCDS_prop <- nassCDS %>%
+                  group_by(seatbelt, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+p1 <- ggplot(data = nassCDS_prop) +
+  geom_bar(aes(seatbelt, freq, fill = dead), stat = "identity", position = "stack")
+
+
+nassCDS_prop <- nassCDS %>%
+                  group_by(airbag, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+p2 <- ggplot(data = nassCDS_prop) +
+  geom_bar(aes(airbag, freq, fill = dead), stat = "identity", position = "stack")
+
+nassCDS_prop <- nassCDS %>%
+                  group_by(deploy, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+p3 <- ggplot(data = nassCDS_prop) +
+  geom_bar(aes(deploy, freq, fill = dead), stat = "identity", position = "stack")
+
+nassCDS_prop <- nassCDS %>%
+                  group_by(frontal, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+p4 <- ggplot(data = nassCDS_prop) +
+  geom_bar(aes(frontal, freq, fill = dead), stat = "identity", position = "stack")
+
+
+grid.arrange(p1, p2,
+             p3, p4, ncol = 2)
+```
+
+It can be seen that wearing seatbelt and having airbag increases the chance of survival. Intresetingly however, the deployment of the airbag does not signifficantly impact the death rate. Another interesting fact is that the death rate of non-frontal crashes are higher than the frontal ones.
+
+5. Any other interesting finding?
+
+There are many interesting points to present, but I limited this section to two points.
+
+```{r}
+nassCDS_counts <- nassCDS %>%
+  count(ageOFocc, injSeverity)
+
+ggplot(data = nassCDS_counts, mapping = aes(ageOFocc, injSeverity)) +
+  geom_tile(mapping = aes(fill = n))
+
+```
+
+The above plot shows that younger occupants are more likely to be involved in no-injury and incapacitating crashes.
+
+```{r}
+nassCDS_prop <- nassCDS %>%
+                  group_by(sex, dead) %>%
+                  summarise(n = n()) %>%
+                  mutate(freq = n / sum(n))
+
+ggplot(data = nassCDS_prop) +
+  geom_bar(aes(sex, freq, fill = dead), stat = "identity", position = "stack")
+
+```
+Another interesting point is that the deth rate among males is higher than that of females.
+
+

@@ -1,0 +1,74 @@
+---
+title: "EDA Technique Summary"
+author: "Group 3"
+date: "May 15, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Technique 1: The Variation of Continious and Categorical Variables (Alireza Mostafizi)
+This chapter briefly explaines a few tehcniques to visualized the distribution of the categorical and continious variables. *Categorical Values* are normally visualized with bar plots (*geom_bar*) and *continious values* are typically visualized with histograms (*geom_histogram* or *geom_freqpoly*). The following code plots the distribution of *cut* (categorical) and *carat* (continious) variables from *dimonds* dataset in *ggplot2*.
+
+```{r, message=FALSE}
+library(ggplot2, tidyverse)
+library(gridExtra)
+library(dplyr)
+# Categorical Variable
+cut_dist <- ggplot(data = diamonds) +
+            geom_bar(mapping = aes(x = cut))
+# Continious Variable
+carat_dist <- ggplot(data = diamonds) +
+              geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
+grid.arrange(cut_dist, carat_dist, ncol = 2)
+```
+
+Please note the use of *grid.arrange()* function from the package *ggExtra*. Also, I recommend always trying different *bin_width*. Small *bin_disth* helps you find the most common values in a better way as folllwing,
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01) # Low bin_width reveals the common values that
+                                  # were cluttered in the original histogram
+```
+
+There might be some small details hidden in large *bin_widths*. In addition, if, for some reason, you rather using any other type of plot, you can generate the dataset with the count values with the following code for both categorical and continious variables.
+
+```{r}
+library(dplyr) ## Needed for the pip function
+# categorical variable
+diamonds %>% ## %>% is the pipe function. Similar to | in unix systems
+  count(cut)
+# continous variable
+diamonds %>% 
+  count(cut_width(carat, 0.5)) # binwidth of 0.5
+```
+Anothr usefull technique for overlaying different historgrams is to use *geom_freqpoly()* instead of *geom_histogram()*. It is exactly the same but instead of bars, a poly line represents the histogram.
+
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = carat, colour = cut)) +
+  geom_freqpoly(binwidth = 0.1)
+```
+
+Another good technique is zooming into a plot to find the unusual values in a distribution. *coord_cartesian()* function and its parameters, *xlim* and *ylim* come in handy for this purpose. Let's try it on the histogram of *y*, the width of the dimonds.
+
+```{r}
+# Normal histogram
+y_dist <- ggplot(data = diamonds) +
+          geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+# Zoomed in histogran
+y_dist_zoomed <- ggplot(data = diamonds) +
+                 geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+                 coord_cartesian(ylim = c(0,5))
+grid.arrange(y_dist, y_dist_zoomed, ncol = 2)
+```
+That clears the unusual values in 0, around 30 and around 60. Alternatively, you can found these observations with *filter()* function from *dplyr* package.
+
+```{r}
+diamonds %>% 
+  filter(y < 3 | y > 20) %>% 
+  select(price, x, y, z) %>%
+  arrange(y)
+```
